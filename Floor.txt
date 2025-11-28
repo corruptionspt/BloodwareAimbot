@@ -1,0 +1,147 @@
+-- // TROLL TOOLS - Updated: Noclip + Forward +35 Drop // --
+local Players = game.Players
+local plr = Players.LocalPlayer
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+
+local gui = Instance.new("ScreenGui")
+gui.ResetOnSpawn = false
+gui.Parent = game.CoreGui
+
+local main = Instance.new("Frame")
+main.Size = UDim2.new(0, 220, 0, 220)
+main.Position = UDim2.new(0.02, 0, 0.25, 0)
+main.BackgroundColor3 = Color3.fromRGB(10, 12, 40)
+main.BackgroundTransparency = 0.3
+main.Active = true
+main.Draggable = true
+main.Visible = true
+main.Parent = gui
+
+Instance.new("UICorner", main).CornerRadius = UDim.new(0, 14)
+local stroke = Instance.new("UIStroke", main)
+stroke.Thickness = 3
+stroke.Color = Color3.fromRGB(255, 70, 90)
+
+local title = Instance.new("TextLabel", main)
+title.Size = UDim2.new(1,0,0,44)
+title.BackgroundTransparency = 1
+title.Text = "Troll Tools"
+title.TextColor3 = Color3.fromRGB(100, 200, 255)
+title.Font = Enum.Font.Arcade
+title.TextSize = 26
+
+local function root() return plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") end
+
+-- ESP (Always ON)
+local function addESP(p)
+    if p == plr or not p.Character then return end
+    pcall(function()
+        if p.Character:FindFirstChild("ESPBox") then return end
+        local head = p.Character:FindFirstChild("Head")
+        if not head then return end
+        local box = Instance.new("BoxHandleAdornment")
+        box.Name = "ESPBox"
+        box.Size = Vector3.new(4,6,2)
+        box.Color3 = Color3.fromRGB(255,0,255)
+        box.Transparency = 0.6
+        box.AlwaysOnTop = true
+        box.ZIndex = 10
+        box.Adornee = p.Character
+        box.Parent = p.Character
+
+        local bg = Instance.new("BillboardGui", head)
+        bg.Name = "ESPGui"
+        bg.Size = UDim2.new(0,120,0,40)
+        bg.StudsOffset = Vector3.new(0,3,0)
+        bg.AlwaysOnTop = true
+        bg.Adornee = head
+        local lbl = Instance.new("TextLabel", bg)
+        lbl.Size = UDim2.new(1,0,1,0)
+        lbl.BackgroundTransparency = 1
+        lbl.Text = p.DisplayName
+        lbl.TextColor3 = Color3.fromRGB(255,255,0)
+        lbl.Font = Enum.Font.Arcade
+        lbl.TextStrokeTransparency = 0
+        lbl.TextSize = 18
+        lbl.TextStrokeColor3 = Color3.new(0,0,0)
+    end)
+end
+for _,p in Players:GetPlayers() do if p.Character then addESP(p) end end
+Players.PlayerAdded:Connect(function(p) p.CharacterAdded:Connect(function() task.wait(1) addESP(p) end) end)
+
+-- One-Click Buttons
+local function makeButton(name, yPos)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0,190,0,40)
+    btn.Position = UDim2.new(0.5,-95,0,yPos)
+    btn.BackgroundColor3 = Color3.fromRGB(200,40,50)
+    btn.Text = name
+    btn.TextColor3 = Color3.new(1,1,1)
+    btn.Font = Enum.Font.Arcade
+    btn.TextSize = 18
+    btn.AutoButtonColor = false
+    btn.Parent = main
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0,10)
+
+    btn.MouseButton1Click:Connect(function()
+        local myRoot = root()
+        if not myRoot then return end
+
+        pcall(function()
+            if name == "Void TP" then
+                myRoot.CFrame = CFrame.new(9123456789, 512, 9123456789)
+
+            elseif name == "Y-5000 TP" then
+                myRoot.CFrame = CFrame.new(myRoot.Position.X, myRoot.Position.Y - 5000, myRoot.Position.Z)
+
+            elseif name == "Noclip Forward +35" then
+                local closest = nil
+                local closestDist = math.huge
+                for _, p in Players:GetPlayers() do
+                    if p ~= plr and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                        local dist = (p.Character.HumanoidRootPart.Position - myRoot.Position).Magnitude
+                        if dist < closestDist then
+                            closestDist = dist
+                            closest = p.Character.HumanoidRootPart
+                        end
+                    end
+                end
+
+                if closest then
+                    -- Noclip all parts
+                    for _, part in pairs(closest.Parent:GetDescendants()) do
+                        if part:IsA("BasePart") then
+                            part.CanCollide = false
+                        end
+                    end
+
+                    -- Teleport 35 studs FORWARD from YOUR current facing direction
+                    local forwardOffset = myRoot.CFrame.LookVector * 35
+                    local dropPos = myRoot.Position + forwardOffset
+                    closest.CFrame = CFrame.new(dropPos)
+
+                    print("Noclipped & flung", closest.Parent.Name, "35 studs forward from you!")
+                end
+            end
+        end)
+
+        -- Flash effect
+        TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(40,200,70)}):Play()
+        task.wait(0.3)
+        TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(200,40,50)}):Play()
+    end)
+end
+
+makeButton("Void TP", 60)
+makeButton("Y-5000 TP", 110)
+makeButton("Noclip Forward +35", 160)
+
+-- Toggle GUI
+UserInputService.InputBegan:Connect(function(k)
+    if k.KeyCode == Enum.KeyCode.RightControl then
+        main.Visible = not main.Visible
+    end
+end)
+
+print("Troll Tools loaded - Now flings closest player 35 studs FORWARD from where YOU are facing!")
