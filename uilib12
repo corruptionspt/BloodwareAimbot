@@ -1,0 +1,543 @@
+-- Protection UI Library
+
+local Protection = {}
+Protection.__index = Protection
+
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local TeleportService = game:GetService("TeleportService")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local MarketplaceService = game:GetService("MarketplaceService")
+
+local LocalPlayer = Players.LocalPlayer
+
+local function create(className, properties)
+	local instance = Instance.new(className)
+	for prop, value in pairs(properties or {}) do
+		instance[prop] = value
+	end
+	return instance
+end
+
+function Protection:Initialize()
+	local ScreenGui = create("ScreenGui", {Parent = game:GetService("CoreGui"), Name = "ProtectionHub", ResetOnSpawn = false})
+	
+	local MainFrame = create("Frame", {
+		Parent = ScreenGui,
+		BackgroundColor3 = Color3.fromHex("#131314"),
+		BackgroundTransparency = 0.15,
+		Size = UDim2.new(0, 480, 0, 320),
+		Position = UDim2.new(0.5, -240, 0.5, -160),
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		ClipsDescendants = true,
+		Active = true,
+		BorderSizePixel = 0,
+	})
+	
+	local UICornerMain = create("UICorner", {Parent = MainFrame, CornerRadius = UDim.new(0, 10)})
+	
+	local dragging = false
+	local dragInput, dragStart, startPos
+	
+	local function updateDrag(input)
+		local delta = input.Position - dragStart
+		local newPosition = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+		local tween = TweenService:Create(MainFrame, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = newPosition})
+		tween:Play()
+	end
+	
+	MainFrame.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			dragging = true
+			dragStart = input.Position
+			startPos = MainFrame.Position
+			input.Changed:Connect(function()
+				if input.UserInputState == Enum.UserInputState.End then
+					dragging = false
+				end
+			end)
+		end
+	end)
+	
+	MainFrame.InputChanged:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+			dragInput = input
+		end
+	end)
+	
+	UserInputService.InputChanged:Connect(function(input)
+		if input == dragInput and dragging then
+			updateDrag(input)
+		end
+	end)
+	
+	local HeaderBar = create("Frame", {
+		Parent = MainFrame,
+		BackgroundColor3 = Color3.fromHex("#1c1c1e"),
+		BackgroundTransparency = 0.15,
+		Size = UDim2.new(1, 0, 0, 36),
+		BorderSizePixel = 0,
+	})
+	
+	local UICornerHeader = create("UICorner", {Parent = HeaderBar, CornerRadius = UDim.new(0, 10)})
+	
+	local HeaderTitle = create("TextLabel", {
+		Parent = HeaderBar,
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, -16, 1, 0),
+		Position = UDim2.new(0, 16, 0, 0),
+		Text = "Protection",
+		TextColor3 = Color3.fromHex("#FFFFFF"),
+		Font = Enum.Font.GothamBold,
+		TextSize = 16,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		BorderSizePixel = 0,
+	})
+	
+	local Sidebar = create("Frame", {
+		Parent = MainFrame,
+		BackgroundColor3 = Color3.fromHex("#1c1c1e"),
+		BackgroundTransparency = 0.3,
+		Size = UDim2.new(0, 100, 1, -36),
+		Position = UDim2.new(0, 0, 0, 36),
+		BorderSizePixel = 0,
+	})
+	
+	local SidebarCorner = create("UICorner", {Parent = Sidebar, CornerRadius = UDim.new(0, 10)})
+	
+	local ScriptContent = create("Frame", {
+		Parent = MainFrame,
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, -100, 1, -36),
+		Position = UDim2.new(0, 100, 0, 36),
+		BorderSizePixel = 0,
+		ClipsDescendants = true,
+	})
+	
+	local GameContent = create("Frame", {
+		Parent = MainFrame,
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, -100, 1, -36),
+		Position = UDim2.new(0, 100, 0, 36),
+		BorderSizePixel = 0,
+		ClipsDescendants = true,
+		Visible = false,
+	})
+	
+	local TabButtons = {}
+	local TabContainer = create("Frame", {
+		Parent = Sidebar,
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, 0, 0, 70),
+		Position = UDim2.new(0, 0, 0, 10),
+		BorderSizePixel = 0,
+	})
+	
+	local ScriptTabButton = create("TextButton", {
+		Parent = TabContainer,
+		BackgroundColor3 = Color3.fromHex("#2C2C2E"),
+		Text = "Script",
+		Font = Enum.Font.GothamBold,
+		TextColor3 = Color3.fromHex("#FFFFFF"),
+		TextSize = 13,
+		Size = UDim2.new(1, -16, 0, 28),
+		Position = UDim2.new(0, 8, 0, 0),
+		BorderSizePixel = 0,
+	})
+	local ScriptTabCorner = create("UICorner", {Parent = ScriptTabButton, CornerRadius = UDim.new(0, 8)})
+	
+	local GameTabButton = create("TextButton", {
+		Parent = TabContainer,
+		BackgroundColor3 = Color3.fromHex("#1c1c1e"),
+		Text = "Game",
+		Font = Enum.Font.GothamBold,
+		TextColor3 = Color3.fromHex("#A1A1A4"),
+		TextSize = 13,
+		Size = UDim2.new(1, -16, 0, 28),
+		Position = UDim2.new(0, 8, 0, 34),
+		BorderSizePixel = 0,
+	})
+	local GameTabCorner = create("UICorner", {Parent = GameTabButton, CornerRadius = UDim.new(0, 8)})
+	
+	local function switchTab(tabName)
+		if tabName == "Script" then
+			ScriptContent.Visible = true
+			GameContent.Visible = false
+			local fadeIn = TweenService:Create(ScriptContent, TweenInfo.new(0.25, Enum.EasingStyle.Cubic, Enum.EasingDirection.InOut), {BackgroundTransparency = 1})
+			ScriptContent.BackgroundTransparency = 1
+			fadeIn:Play()
+			ScriptTabButton.BackgroundColor3 = Color3.fromHex("#2C2C2E")
+			ScriptTabButton.TextColor3 = Color3.fromHex("#FFFFFF")
+			GameTabButton.BackgroundColor3 = Color3.fromHex("#1c1c1e")
+			GameTabButton.TextColor3 = Color3.fromHex("#A1A1A4")
+		else
+			ScriptContent.Visible = false
+			GameContent.Visible = true
+			local fadeIn = TweenService:Create(GameContent, TweenInfo.new(0.25, Enum.EasingStyle.Cubic, Enum.EasingDirection.InOut), {BackgroundTransparency = 1})
+			GameContent.BackgroundTransparency = 1
+			fadeIn:Play()
+			GameTabButton.BackgroundColor3 = Color3.fromHex("#2C2C2E")
+			GameTabButton.TextColor3 = Color3.fromHex("#FFFFFF")
+			ScriptTabButton.BackgroundColor3 = Color3.fromHex("#1c1c1e")
+			ScriptTabButton.TextColor3 = Color3.fromHex("#A1A1A4")
+		end
+	end
+	
+	ScriptTabButton.MouseButton1Click:Connect(function() switchTab("Script") end)
+	GameTabButton.MouseButton1Click:Connect(function() switchTab("Game") end)
+	
+	local ProfileFrame = create("Frame", {
+		Parent = Sidebar,
+		BackgroundColor3 = Color3.fromHex("#2C2C2E"),
+		Size = UDim2.new(0, 76, 0, 76),
+		Position = UDim2.new(0.5, -38, 1, -92),
+		BorderSizePixel = 0,
+	})
+	local ProfileCorner = create("UICorner", {Parent = ProfileFrame, CornerRadius = UDim.new(0, 10)})
+	
+	local ProfileImage = create("ImageLabel", {
+		Parent = ProfileFrame,
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, -8, 1, -8),
+		Position = UDim2.new(0, 4, 0, 4),
+		Image = "",
+		BorderSizePixel = 0,
+	})
+	local ProfileImageCorner = create("UICorner", {Parent = ProfileImage, CornerRadius = UDim.new(0, 8)})
+	
+	local userId = LocalPlayer.UserId
+	local thumbType = Enum.ThumbnailType.HeadShot
+	local thumbSize = Enum.ThumbnailSize.Size150x150
+	local content = Players:GetUserThumbnailAsync(userId, thumbType, thumbSize)
+	ProfileImage.Image = content
+	
+	local MetaSection = create("Frame", {
+		Parent = ScriptContent,
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, 0, 0, 70),
+		Position = UDim2.new(0, 10, 0, 10),
+		BorderSizePixel = 0,
+	})
+	
+	local UsernameLabel = create("TextLabel", {
+		Parent = MetaSection,
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, 0, 0, 18),
+		Text = "Username: " .. LocalPlayer.Name,
+		Font = Enum.Font.Gotham,
+		TextColor3 = Color3.fromHex("#A1A1A4"),
+		TextSize = 12,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		BorderSizePixel = 0,
+	})
+	
+	local TimeLabel = create("TextLabel", {
+		Parent = MetaSection,
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, 0, 0, 18),
+		Position = UDim2.new(0, 0, 0, 20),
+		Text = "Time: " .. os.date("%H:%M:%S"),
+		Font = Enum.Font.Gotham,
+		TextColor3 = Color3.fromHex("#A1A1A4"),
+		TextSize = 12,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		BorderSizePixel = 0,
+	})
+	
+	local gameName = "Unknown"
+	pcall(function()
+		gameName = MarketplaceService:GetProductInfo(game.PlaceId).Name
+	end)
+	
+	local GameLabel = create("TextLabel", {
+		Parent = MetaSection,
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, 0, 0, 18),
+		Position = UDim2.new(0, 0, 0, 40),
+		Text = "Game: " .. gameName .. " (" .. game.PlaceId .. ")",
+		Font = Enum.Font.Gotham,
+		TextColor3 = Color3.fromHex("#A1A1A4"),
+		TextSize = 12,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextTruncate = Enum.TextTruncate.AtEnd,
+		BorderSizePixel = 0,
+	})
+	
+	local VersionLabel = create("TextLabel", {
+		Parent = MetaSection,
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, 0, 0, 18),
+		Position = UDim2.new(0, 0, 0, 60),
+		Text = "Version: 1.0.0",
+		Font = Enum.Font.Gotham,
+		TextColor3 = Color3.fromHex("#A1A1A4"),
+		TextSize = 12,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		BorderSizePixel = 0,
+	})
+	
+	local ScriptList = create("ScrollingFrame", {
+		Parent = ScriptContent,
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, -20, 1, -90),
+		Position = UDim2.new(0, 10, 0, 80),
+		ScrollBarThickness = 3,
+		ScrollBarImageColor3 = Color3.fromHex("#2C2C2E"),
+		CanvasSize = UDim2.new(0, 0, 0, 0),
+		BorderSizePixel = 0,
+	})
+	
+	local ScriptListLayout = create("UIListLayout", {
+		Parent = ScriptList,
+		SortOrder = Enum.SortOrder.LayoutOrder,
+		Padding = UDim.new(0, 6),
+	})
+	
+	local function createScriptEntry(name, updateLog)
+		local EntryFrame = create("Frame", {
+			Parent = ScriptList,
+			BackgroundColor3 = Color3.fromHex("#1c1c1e"),
+			Size = UDim2.new(1, -4, 0, 40),
+			BorderSizePixel = 0,
+		})
+		local EntryCorner = create("UICorner", {Parent = EntryFrame, CornerRadius = UDim.new(0, 8)})
+		
+		local ScriptName = create("TextLabel", {
+			Parent = EntryFrame,
+			BackgroundTransparency = 1,
+			Size = UDim2.new(0, 120, 1, -8),
+			Position = UDim2.new(0, 8, 0, 4),
+			Text = name,
+			Font = Enum.Font.Gotham,
+			TextColor3 = Color3.fromHex("#FFFFFF"),
+			TextSize = 13,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			BorderSizePixel = 0,
+		})
+		
+		local UpdateLogButton = create("TextButton", {
+			Parent = EntryFrame,
+			BackgroundColor3 = Color3.fromHex("#2C2C2E"),
+			Size = UDim2.new(0, 70, 1, -16),
+			Position = UDim2.new(1, -142, 0, 8),
+			Text = "Log",
+			Font = Enum.Font.Gotham,
+			TextColor3 = Color3.fromHex("#A1A1A4"),
+			TextSize = 11,
+			BorderSizePixel = 0,
+		})
+		local LogCorner = create("UICorner", {Parent = UpdateLogButton, CornerRadius = UDim.new(0, 6)})
+		
+		local LoadButton = create("TextButton", {
+			Parent = EntryFrame,
+			BackgroundColor3 = Color3.fromHex("#3A3A3C"),
+			Size = UDim2.new(0, 60, 1, -16),
+			Position = UDim2.new(1, -72, 0, 8),
+			Text = "Load",
+			Font = Enum.Font.GothamBold,
+			TextColor3 = Color3.fromHex("#FFFFFF"),
+			TextSize = 11,
+			BorderSizePixel = 0,
+		})
+		local LoadCorner = create("UICorner", {Parent = LoadButton, CornerRadius = UDim.new(0, 6)})
+		
+		LoadButton.MouseButton1Click:Connect(function()
+			local shrink = TweenService:Create(LoadButton, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Size = UDim2.new(0, 56, 1, -14)})
+			shrink:Play()
+			shrink.Completed:Connect(function()
+				local regrow = TweenService:Create(LoadButton, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(0, 60, 1, -16)})
+				regrow:Play()
+			end)
+		end)
+		
+		LoadButton.MouseEnter:Connect(function()
+			local hover = TweenService:Create(LoadButton, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundColor3 = Color3.fromHex("#4A4A4C")})
+			hover:Play()
+		end)
+		
+		LoadButton.MouseLeave:Connect(function()
+			local leave = TweenService:Create(LoadButton, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundColor3 = Color3.fromHex("#3A3A3C")})
+			leave:Play()
+		end)
+		
+		UpdateLogButton.MouseButton1Click:Connect(function()
+			print(updateLog)
+		end)
+		
+		ScriptList.CanvasSize = UDim2.new(0, 0, 0, ScriptListLayout.AbsoluteContentSize.Y + 6)
+		ScriptListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+			ScriptList.CanvasSize = UDim2.new(0, 0, 0, ScriptListLayout.AbsoluteContentSize.Y + 6)
+		end)
+		
+		return EntryFrame
+	end
+	
+	createScriptEntry("Main Script", "v1.0.0 - Initial release\nv1.0.1 - Bug fixes")
+	createScriptEntry("Auto Farm", "v1.2.0 - Added speed boost\nv1.2.1 - Fixed detection")
+	createScriptEntry("ESP", "v1.0.0 - Player ESP added\nv1.1.0 - Item ESP added")
+	createScriptEntry("Teleport", "v1.0.0 - Waypoint system added")
+	
+	spawn(function()
+		while true do
+			TimeLabel.Text = "Time: " .. os.date("%H:%M:%S")
+			RunService.Heartbeat:Wait()
+		end
+	end)
+	
+	local GameSearch = create("TextBox", {
+		Parent = GameContent,
+		BackgroundColor3 = Color3.fromHex("#1c1c1e"),
+		Size = UDim2.new(1, -20, 0, 30),
+		Position = UDim2.new(0, 10, 0, 10),
+		Font = Enum.Font.Gotham,
+		TextColor3 = Color3.fromHex("#FFFFFF"),
+		PlaceholderText = "Search games...",
+		PlaceholderColor3 = Color3.fromHex("#636366"),
+		TextSize = 13,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		ClearTextOnFocus = false,
+		BorderSizePixel = 0,
+	})
+	local SearchCorner = create("UICorner", {Parent = GameSearch, CornerRadius = UDim.new(0, 8)})
+	local SearchPadding = create("UIPadding", {Parent = GameSearch, PaddingLeft = UDim.new(0, 8)})
+	
+	local GameList = create("ScrollingFrame", {
+		Parent = GameContent,
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, -20, 1, -50),
+		Position = UDim2.new(0, 10, 0, 50),
+		ScrollBarThickness = 3,
+		ScrollBarImageColor3 = Color3.fromHex("#2C2C2E"),
+		CanvasSize = UDim2.new(0, 0, 0, 0),
+		BorderSizePixel = 0,
+	})
+	
+	local GameListLayout = create("UIListLayout", {
+		Parent = GameList,
+		SortOrder = Enum.SortOrder.Name,
+		Padding = UDim.new(0, 6),
+	})
+	
+	local gameEntries = {}
+	
+	local function addGame(title, placeId)
+		local EntryFrame = create("Frame", {
+			Parent = GameList,
+			BackgroundColor3 = Color3.fromHex("#1c1c1e"),
+			Size = UDim2.new(1, -4, 0, 40),
+			Name = title,
+			BorderSizePixel = 0,
+		})
+		local EntryCorner = create("UICorner", {Parent = EntryFrame, CornerRadius = UDim.new(0, 8)})
+		
+		local GameTitle = create("TextLabel", {
+			Parent = EntryFrame,
+			BackgroundTransparency = 1,
+			Size = UDim2.new(1, -80, 1, 0),
+			Position = UDim2.new(0, 10, 0, 0),
+			Text = title,
+			Font = Enum.Font.Gotham,
+			TextColor3 = Color3.fromHex("#FFFFFF"),
+			TextSize = 13,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			BorderSizePixel = 0,
+		})
+		
+		local JoinButton = create("TextButton", {
+			Parent = EntryFrame,
+			BackgroundColor3 = Color3.fromHex("#3A3A3C"),
+			Size = UDim2.new(0, 60, 1, -16),
+			Position = UDim2.new(1, -70, 0, 8),
+			Text = "Join",
+			Font = Enum.Font.GothamBold,
+			TextColor3 = Color3.fromHex("#FFFFFF"),
+			TextSize = 11,
+			BorderSizePixel = 0,
+		})
+		local JoinCorner = create("UICorner", {Parent = JoinButton, CornerRadius = UDim.new(0, 6)})
+		
+		JoinButton.MouseButton1Click:Connect(function()
+			TeleportService:Teleport(placeId, LocalPlayer)
+		end)
+		
+		JoinButton.MouseEnter:Connect(function()
+			local hover = TweenService:Create(JoinButton, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundColor3 = Color3.fromHex("#4A4A4C")})
+			hover:Play()
+		end)
+		
+		JoinButton.MouseLeave:Connect(function()
+			local leave = TweenService:Create(JoinButton, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundColor3 = Color3.fromHex("#3A3A3C")})
+			leave:Play()
+		end)
+		
+		table.insert(gameEntries, {frame = EntryFrame, title = title, button = JoinButton})
+		
+		GameList.CanvasSize = UDim2.new(0, 0, 0, GameListLayout.AbsoluteContentSize.Y + 6)
+		GameListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+			GameList.CanvasSize = UDim2.new(0, 0, 0, GameListLayout.AbsoluteContentSize.Y + 6)
+		end)
+	end
+	
+	addGame("Adopt Me!", 920587237)
+	addGame("Blox Fruits", 2753915549)
+	addGame("Brookhaven RP", 4924922222)
+	addGame("Murder Mystery 2", 142823291)
+	addGame("Tower of Hell", 1962086868)
+	addGame("Jailbreak", 606849621)
+	addGame("MeepCity", 370731277)
+	addGame("Pet Simulator X", 6284583030)
+	
+	GameSearch:GetPropertyChangedSignal("Text"):Connect(function()
+		local searchText = GameSearch.Text:lower()
+		for _, entry in pairs(gameEntries) do
+			if searchText == "" or string.find(entry.title:lower(), searchText, 1, true) then
+				entry.frame.Visible = true
+			else
+				entry.frame.Visible = false
+			end
+		end
+		GameList.CanvasSize = UDim2.new(0, 0, 0, GameListLayout.AbsoluteContentSize.Y + 6)
+	end)
+	
+	local function addButtonEffects(button)
+		button.MouseEnter:Connect(function()
+			local hover = TweenService:Create(button, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundColor3 = Color3.fromHex("#3A3A3C")})
+			hover:Play()
+		end)
+		
+		button.MouseLeave:Connect(function()
+			local leave = TweenService:Create(button, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundColor3 = Color3.fromHex("#2C2C2E")})
+			leave:Play()
+		end)
+		
+		button.MouseButton1Down:Connect(function()
+			local shrink = TweenService:Create(button, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Size = UDim2.new(1, -18, 0, 26)})
+			shrink:Play()
+		end)
+		
+		button.MouseButton1Up:Connect(function()
+			local regrow = TweenService:Create(button, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(1, -16, 0, 28)})
+			regrow:Play()
+		end)
+	end
+	
+	addButtonEffects(ScriptTabButton)
+	addButtonEffects(GameTabButton)
+	
+	local openTween = TweenService:Create(MainFrame, TweenInfo.new(0.4, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {Size = UDim2.new(0, 480, 0, 320), Position = UDim2.new(0.5, -240, 0.5, -160)})
+	MainFrame.Size = UDim2.new(0, 0, 0, 0)
+	MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+	openTween:Play()
+	
+	self.ScreenGui = ScreenGui
+	self.MainFrame = MainFrame
+end
+
+function Protection:Destroy()
+	if self.ScreenGui then
+		self.ScreenGui:Destroy()
+	end
+end
+
+return Protection
